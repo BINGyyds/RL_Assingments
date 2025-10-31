@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.tensor import Tensor
+from torch import Tensor
 from utils.test_env import EnvTest
 from q4_schedule import LinearExploration, LinearSchedule
 from core.deep_q_learning_torch import DQN
