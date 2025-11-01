@@ -20,8 +20,8 @@ class NeuralNetwork(nn.Module):
         self.gamma = 0.99
         self.final_epsilon = 0.0001
         self.initial_epsilon = 0.1
-        self.number_of_iterations = 2000000
-        self.replay_memory_size = 10000
+        self.number_of_iterations = 500000
+        self.replay_memory_size = 50000
         self.minibatch_size = 32
 
         self.conv1 = nn.Conv2d(4, 32, 8, 4)
@@ -72,11 +72,14 @@ def resize_and_bgr2gray(image):
     return image_data
 
 
-TARGET_UPDATE_FREQUENCY = 10000 
 
 def train(q_network, target_network, start):
+
+    TOTAL_TRAINING_STEPS = 1000000  # 训练总步数
+    TARGET_UPDATE_FREQUENCY = 1000  # 目标网络更新频率（步数）
+
     # define Adam optimizer
-    optimizer = optim.Adam(q_network.parameters(), lr=1e-6)
+    optimizer = optim.Adam(q_network.parameters(), lr=1e-4)
 
     # initialize mean squared error loss
     criterion = nn.MSELoss()
@@ -111,7 +114,7 @@ def train(q_network, target_network, start):
     # =================================================================
 
     # main infinite loop
-    while iteration < q_network.number_of_iterations:
+    while iteration < TOTAL_TRAINING_STEPS:
         # get output from the neural network
         output = q_network(state)[0]
 
