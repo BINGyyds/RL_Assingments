@@ -44,7 +44,8 @@ We will create a new Conda environment named `rl_env` with Python 3.10. Using a 
 （我们将创建一个名为 `rl_env` 并使用 Python 3.10 的新环境。使用独立环境可以避免与其他项目的包冲突。）
 
 ```bash
-conda create -n rl_env python=3.10```
+conda create -n rl_env python=3.10
+```
 
 ### Step 2: Activate the Environment (第二步：激活环境)
 
@@ -82,6 +83,7 @@ Next, install all other required libraries, including OpenAI Gym for the Atari e
 
 ```bash
 pip install "gym[atari,accept-rom-license]" opencv-python numpy==1.26.4
+pip install tensorboard matplotlib pyglet
 ```
 **Note (注意):** We explicitly install `numpy==1.26.4` to avoid compatibility issues between the older `gym` library and NumPy 2.0+. （我们明确指定安装 `numpy==1.26.4` 是为了避免旧版 `gym` 库与 NumPy 2.0+ 版本之间的兼容性问题。）
 

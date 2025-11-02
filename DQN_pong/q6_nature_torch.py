@@ -42,11 +42,63 @@ class NatureQN(DQN):
         img_height, img_width, n_channels = state_shape
         num_actions = self.env.action_space.n
 
+        input_channels = n_channels * self.config.state_history
+
         ##############################################################
         ################ YOUR CODE HERE - 25-30 lines lines ################
        
+        # 根据 Nature DQN 论文定义网络结构
+        # 输入维度: (batch, input_channels, img_height, img_width)
+        # 例如: (batch, 4, 84, 84)
+        
+        # 主网络 (Q-Network)
+        self.q_network = nn.Sequential(
+            # 第一层卷积
+            nn.Conv2d(in_channels=input_channels, out_channels=32, kernel_size=8, stride=4),
+            nn.ReLU(),
+            # 第二层卷积
+            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2),
+            nn.ReLU(),
+            # 第三层卷积
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1),
+            nn.ReLU(),
+            # 展平层
+            nn.Flatten(),
+            # 第一个全连接层
+            # 注意: in_features=3136 是针对 84x84 输入计算的。如果你的 env 是 (8,8,6),
+            # 这里的输入尺寸需要重新计算，但对于 Atari Pong, 84x84 是标准。
+            # 假设 config 中会提供正确的尺寸，或者我们在这里假设是 Atari 标准输入
+            # (84-8)/4+1 = 20 -> (20-4)/2+1 = 9 -> (9-3)/1+1 = 7.  7*7*64 = 3136
+            nn.Linear(in_features=3136, out_features=512),
+            nn.ReLU(),
+            # 输出层
+            nn.Linear(in_features=512, out_features=num_actions)
+        )
+
+        # 目标网络 (Target Network) - 结构完全相同
+        self.target_network = nn.Sequential(
+            nn.Conv2d(in_channels=input_channels, out_channels=32, kernel_size=8, stride=4),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(in_features=3136, out_features=512),
+            nn.ReLU(),
+            nn.Linear(in_features=512, out_features=num_actions)
+        )
+        
+        # 将网络移动到正确的设备 (CPU or GPU)
+        self.q_network.to(self.device)
+        self.target_network.to(self.device)
+
+        # 初始化时，将主网络的权重复制到目标网络
+        self.target_network.load_state_dict(self.q_network.state_dict())
+
         ##############################################################
         ######################## END YOUR CODE #######################
+
 
     def get_q_values(self, state, network):
         """
@@ -136,6 +188,27 @@ class NatureQN(DQN):
         ##############################################################
         ##################### YOUR CODE HERE - 3-5 lines #############
         
+        # 1. 计算贝尔曼目标 (Bellman Target)
+        # 首先，从 target_q_values 中找到下一状态的最大Q值: max_a' Q_target(s', a')
+        next_q_values = torch.max(target_q_values, dim=1)[0]
+        
+        # done_mask 是一个布尔张量，我们需要把它转成 0 和 1
+        # (1.0 - done_mask.float()) 的作用是：如果 done=True, 结果是0; 如果 done=False, 结果是1
+        # 这样就能实现：如果游戏结束，未来奖励为0
+        targets = rewards + gamma * next_q_values * (1.0 - done_mask.float())
+
+        # 2. 从 q_values 中选出实际执行动作的Q值: Q(s, a)
+        # actions 是一个 (batch_size,) 的索引，我们需要把它变成 (batch_size, 1) 的形状
+        action_q_values = q_values.gather(1, actions.unsqueeze(1)).squeeze(1)
+
+        # 3. 计算损失 (Loss)
+        # 推荐使用 Huber Loss (Smooth L1 Loss) 来增加稳定性
+        loss = F.smooth_l1_loss(action_q_values, targets)
+        
+        # 如果作业严格要求 MSE loss，也可以用下面的代码
+        # loss = F.mse_loss(action_q_values, targets)
+
+        return loss
         ##############################################################
         ######################## END YOUR CODE #######################
 
@@ -161,7 +234,7 @@ class NatureQN(DQN):
 Use deep Q network for test environment.
 """
 if __name__ == '__main__':
-    env = EnvTest((8, 8, 6))
+    env = EnvTest((84, 84, 1))
 
     # exploration strategy
     exp_schedule = LinearExploration(env, config.eps_begin,

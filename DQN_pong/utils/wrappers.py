@@ -19,22 +19,32 @@ class MaxAndSkipEnv(gym.Wrapper):
 
     def step(self, action):
         total_reward = 0.0
-        done = None
+        # done 信号现在被拆分了
+        terminated = False
+        truncated = False
+        info = {}
+
         for _ in range(self._skip):
-            obs, reward, done, info = self.env.step(action)
+            # --- 核心修正 1: 接收5个返回值 ---
+            obs, reward, terminated, truncated, info = self.env.step(action)
             self._obs_buffer.append(obs)
             total_reward += reward
-            if done:
+            # --- 核心修正 2: 检查两个结束信号 ---
+            if terminated or truncated:
                 break
 
         max_frame = np.max(np.stack(self._obs_buffer), axis=0)
+        
+        # --- 核心修正 3: 将结束信号合并回一个 done，以兼容上层代码 ---
+        done = terminated or truncated
 
+        # 确保返回的是旧版 API 的4个值
         return max_frame, total_reward, done, info
 
     def reset(self):
         """Clear past frame buffer and init. to first obs. from inner env."""
         self._obs_buffer.clear()
-        obs = self.env.reset()
+        obs = self.env.reset()[0]
         self._obs_buffer.append(obs)
         return obs
 
@@ -66,13 +76,14 @@ class PreproWrapper(gym.Wrapper):
         """
         Overwrites _step function from environment to apply preprocess
         """
+        # --- 核心修正 4: 确保这里接收的是 4 个值 ---
         obs, reward, done, info = self.env.step(action)
         self.obs = self.prepro(obs)
         return self.obs, reward, done, info
 
 
     def reset(self):
-        self.obs = self.prepro(self.env.reset())
+        self.obs = self.prepro(self.env.reset()[0])
         return self.obs
 
 
