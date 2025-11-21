@@ -1,6 +1,5 @@
 import os
 import gym
-from gym.wrappers.record_video import RecordVideo
 import numpy as np
 import time
 import sys
@@ -386,11 +385,8 @@ class QN(object):
         """
         Re create an env and record a video for one episode
         """
-        # env = gym.make(self.config.env_name)
-        # env = gym.make(self.config.env_name, render_mode="rgb_array")
-        env = gym.make("PongNoFrameskip-v4", render_mode="rgb_array") 
-        # env = gym.wrappers.Monitor(env, self.config.record_path, video_callable=lambda x: True, resume=True)
-        env = RecordVideo(env, video_folder=self.config.record_path, episode_trigger=lambda x: True)
+        env = gym.make(self.config.env_name)
+        env = gym.wrappers.Monitor(env, self.config.record_path, video_callable=lambda x: True, resume=True)
         env = MaxAndSkipEnv(env, skip=self.config.skip_frame)
         env = PreproWrapper(env, prepro=greyscale, shape=(80, 80, 1), 
                         overwrite_render=self.config.overwrite_render)

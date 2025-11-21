@@ -30,8 +30,7 @@ if __name__ == '__main__':
     # atari-py-0.2.6
     # gym-0.19.0
     # https://www.bilibili.com/read/cv17216467/
-    # env = gym.make(config.env_name)
-    env = gym.make(config.env_name, render_mode="rgb_array")
+    env = gym.make(config.env_name)
     env = MaxAndSkipEnv(env, skip=config.skip_frame)
     env = PreproWrapper(env, prepro=greyscale, shape=(80, 80, 1), 
                         overwrite_render=config.overwrite_render)

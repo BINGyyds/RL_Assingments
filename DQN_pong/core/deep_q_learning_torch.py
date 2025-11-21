@@ -4,7 +4,7 @@ import torch.nn as nn
 
 from typing import Tuple
 from pathlib import Path
-from torch import Tensor
+from torch.tensor import Tensor
 from torch.optim import Optimizer
 from torch.utils.tensorboard import SummaryWriter
 from core.q_learning import QN
@@ -91,20 +91,20 @@ class DQN(QN):
         Build model by adding all necessary variables
         """
         self.initialize_models()
-        # if hasattr(self.config, 'load_path'):
-        #     print('Loading parameters from file:', self.config.load_path)
-        #     load_path = Path(self.config.load_path)
-        #     assert load_path.is_file(), f'Provided load_path ({load_path}) does not exist'
-        #     self.q_network.load_state_dict(torch.load(load_path, map_location='cpu'))
-        #     print('Load successful!')
-        # else:
-        #     print('Initializing parameters randomly')
-        #     def init_weights(m):
-        #         if hasattr(m, 'weight'):
-        #             nn.init.xavier_uniform_(m.weight, gain=2 ** (1. / 2))
-        #         if hasattr(m, 'bias'):
-        #             nn.init.zeros_(m.bias)
-        #     self.q_network.apply(init_weights)
+        if hasattr(self.config, 'load_path'):
+            print('Loading parameters from file:', self.config.load_path)
+            load_path = Path(self.config.load_path)
+            assert load_path.is_file(), f'Provided load_path ({load_path}) does not exist'
+            self.q_network.load_state_dict(torch.load(load_path, map_location='cpu'))
+            print('Load successful!')
+        else:
+            print('Initializing parameters randomly')
+            def init_weights(m):
+                if hasattr(m, 'weight'):
+                    nn.init.xavier_uniform_(m.weight, gain=2 ** (1. / 2))
+                if hasattr(m, 'bias'):
+                    nn.init.zeros_(m.bias)
+            self.q_network.apply(init_weights)
         self.q_network = self.q_network.to(self.device)
         self.target_network = self.target_network.to(self.device)
         self.add_optimizer()
@@ -187,10 +187,10 @@ class DQN(QN):
 
         # Convert to Tensor and move to correct device
         self.timer.start('update_step/converting_tensors')
-        s_batch = torch.tensor(s_batch, dtype=torch.long, device=self.device)
-        a_batch = torch.tensor(a_batch, dtype=torch.long, device=self.device)
+        s_batch = torch.tensor(s_batch, dtype=torch.uint8, device=self.device)
+        a_batch = torch.tensor(a_batch, dtype=torch.uint8, device=self.device)
         r_batch = torch.tensor(r_batch, dtype=torch.float, device=self.device)
-        sp_batch = torch.tensor(sp_batch, dtype=torch.long, device=self.device)
+        sp_batch = torch.tensor(sp_batch, dtype=torch.uint8, device=self.device)
         done_mask_batch = torch.tensor(done_mask_batch, dtype=torch.bool, device=self.device)
         self.timer.end('update_step/converting_tensors')
 
